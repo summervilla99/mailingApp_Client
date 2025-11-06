@@ -1,101 +1,125 @@
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useRecipientStore } from "@/lib/store";
-import { sendMail } from "@/lib/api";
 import { useState } from "react";
+import { sendMail } from "@/lib/api";
 
-const schema = z.object({
-  subject: z.string().min(2),
-  body_html: z.string().min(2),
-  extra_emails: z.string().optional(), // a@x.com, b@y.com
-});
-type FormValues = z.infer<typeof schema>;
-
-export default function ComposePage(){
-  const {selectedEmails, clear} = useRecipientStore();
+export default function ComposePage() {
+  const [to, setTo] = useState("");
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
   const [files, setFiles] = useState<File[]>([]);
-  const {register, handleSubmit, watch, formState:{errors, isSubmitting}} = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      subject: "[프로필] 배우 남율 — 프로필 전달드립니다",
-      body_html: "<p>안녕하세요, 캐스팅 디렉터님.</p><p>배우 남율입니다. 최근 작업 및 이력을 첨부 프로필로 전달드립니다.<br/>궁금하신 점은 언제든 회신 부탁드립니다.</p><p>감사합니다.<br/>남율 드림</p>",
-    }
-  });
+  const [sending, setSending] = useState(false);
 
-  const onSubmit = async (v: FormValues)=>{
-    const extras = (v.extra_emails||"").split(",").map(s=>s.trim()).filter(Boolean);
-    const recipients = Array.from(new Set([...selectedEmails, ...extras]));
-    if (!recipients.length) { alert("수신자가 비어 있습니다."); return; }
+  const handleSubmit = async () => {
+    const recipients = to
+      .split(",")
+      .map(t => t.trim())
+      .filter(Boolean);
 
-    // 파일 검증
-    for (const f of files) {
-      if (!/\.(pdf|pptx)$/i.test(f.name)) { alert("PDF/PPTX만 허용합니다."); return; }
-      if (f.size > 20*1024*1024) { alert("파일이 너무 큽니다(최대 20MB)."); return; }
+    if (!recipients.length) {
+      alert("받는 사람을 입력해주세요.");
+      return;
     }
 
-    const res = await sendMail({subject:v.subject, body_html: v.body_html}, recipients, files);
-    alert(`발송 결과: 성공 ${res.sent} / 실패 ${res.failed}`);
-    clear();
-    window.location.hash = "#/"; // 대시보드로 이동
+    const draft = { subject, body };
+
+    try {
+      setSending(true);
+      const result = await sendMail(draft, recipients, files);
+      alert(`메일 발송 완료 (성공: ${result.sent}, 실패: ${result.failed})`);
+    } catch (e: any) {
+      console.error(e);
+      alert("메일 발송 실패: " + e.message);
+    } finally {
+      setSending(false);
+    }
   };
 
-  const body = watch("body_html");
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    setFiles(Array.from(e.target.files));
+  };
 
   return (
-    <section>
-      <h2 className="text-xl font-semibold">메일 작성</h2>
+    <section className="w-full px-4 md:px-8 lg:px-10 py-6">
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* ───────────── 왼쪽: 메일 작성 폼 ───────────── */}
+        <div className="flex-1 space-y-5">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">메일 작성</h2>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-4">
-        <div className="grid md:grid-cols-2 gap-4">
+          {/* 수신자 */}
           <div>
-            <label className="block text-sm mb-1">제목</label>
-            <input {...register("subject")} className="w-full border rounded-xl px-3 py-2 bg-white"/>
-            {errors.subject && <p className="text-red-600 text-sm mt-1">{errors.subject.message}</p>}
+            <label className="label">받는 사람 (쉼표로 구분)</label>
+            <input
+              className="input"
+              placeholder="director@studio.com, cd@agency.com"
+              value={to}
+              onChange={e => setTo(e.target.value)}
+            />
           </div>
+
+          {/* 제목 */}
           <div>
-            <label className="block text-sm mb-1">첨부 (PDF/PPTX)</label>
-            <input type="file" multiple onChange={e=>setFiles(Array.from(e.target.files||[]))}/>
-            <div className="text-xs text-gray-500 mt-1">첨부: {files.map(f=>f.name).join(", ")||"없음"}</div>
+            <label className="label">제목</label>
+            <input
+              className="input"
+              placeholder="메일 제목을 입력하세요"
+              value={subject}
+              onChange={e => setSubject(e.target.value)}
+            />
           </div>
+
+          {/* 본문 */}
+          <div>
+            <label className="label">본문</label>
+            <textarea
+              className="input min-h-[240px] resize-y font-sans leading-relaxed"
+              placeholder={`자기소개나 최근 활동 소식 등을 입력하세요.\n엔터키로 줄바꿈하면 그대로 메일에 반영됩니다.`}
+              value={body}
+              onChange={e => setBody(e.target.value)}
+            />
+          </div>
+
+          {/* 파일 업로드 */}
+          <div>
+            <label className="label">프로필 파일 (PDF/PPTX)</label>
+            <input
+              type="file"
+              multiple
+              accept=".pdf,.pptx"
+              className="input"
+              onChange={handleFileChange}
+            />
+            {files.length > 0 && (
+              <ul className="mt-2 text-sm text-gray-600 space-y-1">
+                {files.map(f => (
+                  <li key={f.name}>📎 {f.name}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <button
+            onClick={handleSubmit}
+            disabled={sending}
+            className={`btn-primary w-full py-3 text-center ${
+              sending ? "opacity-60 cursor-not-allowed" : ""
+            }`}
+          >
+            {sending ? "발송 중..." : "발송하기 ✉️"}
+          </button>
         </div>
 
-        <div>
-          <label className="block text-sm mb-1">본문 (HTML)</label>
-          <textarea {...register("body_html")} rows={10} className="w-full border rounded-xl px-3 py-2 bg-white"></textarea>
-          {errors.body_html && <p className="text-red-600 text-sm mt-1">{errors.body_html.message}</p>}
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="bg-white border rounded-2xl p-3">
-            <div className="flex items-center justify-between">
-              <div className="font-medium">보낼 대상</div>
-              <div className="text-sm text-gray-500">{selectedEmails.length}명</div>
+        {/* ───────────── 오른쪽: 실시간 미리보기 ───────────── */}
+        <div className="flex-1">
+          <div className="sticky top-20">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">
+              실시간 미리보기
+            </h3>
+            <div className="card card-pad whitespace-pre-line text-gray-800 min-h-[400px] leading-relaxed">
+              {body ? body : "작성 중인 메일 내용이 여기에 표시됩니다."}
             </div>
-            <div className="mt-2 max-h-48 overflow-auto text-sm text-gray-700">
-              {selectedEmails.length ? selectedEmails.map(e=>(
-                <div key={e} className="py-1 border-b last:border-b-0">{e}</div>
-              )) : <div className="text-gray-400">Contacts에서 체크해 주세요.</div>}
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm mb-1">추가 이메일 (쉼표 , 로 구분)</label>
-            <input {...register("extra_emails")} className="w-full border rounded-xl px-3 py-2 bg-white" placeholder="a@x.com, b@y.com"/>
           </div>
         </div>
-
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="bg-white border rounded-2xl p-3">
-            <div className="font-medium">미리보기</div>
-            <div className="prose prose-sm max-w-none mt-2" dangerouslySetInnerHTML={{__html: body}}/>
-          </div>
-          <div className="flex items-end">
-            <button disabled={isSubmitting} className="px-4 py-2 rounded-full bg-black text-white">
-              {isSubmitting ? "발송 중..." : "발송"}
-            </button>
-          </div>
-        </div>
-      </form>
+      </div>
     </section>
   );
 }

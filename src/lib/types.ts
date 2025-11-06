@@ -9,4 +9,8 @@ export type Contact = {
   last_sent_at: string | null; // ISO
 };
 
-export type MailingDraft = { subject: string; body_html: string; };
+
+export interface MailingDraft {
+  subject: string;
+  body: string;
+}

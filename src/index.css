@@ -1,73 +1,200 @@
-.input { @apply w-full border rounded-xl px-3 py-2 bg-white; }
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind v4: single import */
+@import "tailwindcss";
 
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+/* =========================
+   1) Design Tokens (Light)
+   ========================= */
+@layer base {
+  :root{
+  --surface-0: 247 248 245;
+  --surface-1: 249 250 247;
+  --surface-2: 255 255 255;
+  --ink: 28 32 28;           /* 다크 세이지 잉크 */
+  --accent: 128 142 117;     /* 세이지 그린 */
+  --accent-2: 179 191 171;
+  --accent-dark: 84 65 55;   /* 라이트 세이지 */
+  --hair: 88 96 84;
+  --elev: 8 20 18;
+  
   }
-  a:hover {
-    color: #747bff;
+
+  html, body{
+    color: rgb(var(--ink));
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(110,85,70,.04), transparent 55%),
+      radial-gradient(1000px 500px at 120% 0%, rgba(110,85,70,.03), transparent 60%),
+      rgb(var(--surface-0));
+    font-family: "Inter","Pretendard",system-ui,-apple-system,sans-serif;
+    transition: background-color .2s ease, color .2s ease;
   }
-  button {
-    background-color: #f9f9f9;
+}
+
+/* =========================
+   2) App Chrome / Utilities
+   ========================= */
+@layer utilities {
+  /* Topbar: soft glass, real bottom line은 .line-b-*로 제어 */
+  .topbar{
+    background: linear-gradient(to bottom, rgba(255,255,255,.86), rgba(255,255,255,.78));
+    backdrop-filter: blur(10px);
+    box-shadow: 0 6px 20px rgba(var(--elev), .06);
+  }
+  
+
+  /* Sidebar: full-height white rail (우측 얇은 라인은 .line-r-*로) */
+  .sidebar{
+    background-color: #fff;
+    box-shadow: 0 10px 30px rgba(var(--elev), .04);
+  }
+
+  /* Page surface: content panel tone */
+  .page-surface{
+    background-color: rgb(var(--surface-1));
+  }
+
+  /* Topbar 검색 상자(스코프 한정) */
+  .topbar [data-role="top-search"]{
+    border-color: rgba(var(--hair), .12);
+    background-color: rgba(255,255,255,.92);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.03);
+  }
+
+  /* Scrollbar */
+  .scroll-slim::-webkit-scrollbar{ height:8px; width:8px; }
+  .scroll-slim::-webkit-scrollbar-thumb{
+    background: rgba(110,85,70,.3); border-radius:999px;
+  }
+  .scroll-slim::-webkit-scrollbar-thumb:hover{ background: rgba(110,85,70,.5); }
+}
+
+/* =========================
+   3) Components
+   ========================= */
+@layer components {
+  /* Cards */
+  .card{
+    border: 1px solid rgba(var(--hair), .06);
+    border-radius: 1rem; /* rounded-2xl */
+    background-color: rgb(var(--surface-2));
+    box-shadow:
+      0 1px 2px rgba(var(--elev), .06),
+      0 10px 28px rgba(var(--elev), .07);
+  }
+  .card-pad{ padding: 1.25rem; }         /* p-5 */
+  @media (min-width: 768px){ .card-pad{ padding: 1.5rem; } } /* md:p-6 */
+
+  /* Buttons */
+  .btn{
+    display:inline-flex; align-items:center; gap:.5rem;
+    padding:.5rem 1rem; border-radius:.75rem;
+    border:1px solid rgb(var(--border));
+    background-color:#fff; color: rgb(var(--ink));
+    transition: background-color .2s ease, box-shadow .2s ease, transform .06s ease;
+  }
+  .btn:hover{ background-color: rgba(var(--brown), .06); }
+
+  .btn-primary{
+    display:inline-flex; align-items:center; gap:.5rem;
+    padding:.5rem 1rem; border-radius:.75rem; border:none;
+    background-color: rgb(var(--brown)); color:#fff;
+    box-shadow:
+      0 1px 2px rgba(var(--elev), .12),
+      0 6px 14px rgba(var(--elev), .10);
+    transition: background-color .2s ease, box-shadow .2s ease, transform .06s ease, filter .2s ease;
+  }
+  .btn-primary:hover{
+    filter: brightness(1.04);
+    box-shadow:
+      0 2px 3px rgba(var(--elev), .14),
+      0 10px 24px rgba(var(--elev), .12);
+    transform: translateY(-1px);
+  }
+
+  .btn-ghost{ border:1px solid transparent; background:transparent; }
+  .btn-ghost:hover{ background-color: rgba(var(--brown), .08); }
+
+  /* Inputs */
+  .input{
+    width:100%; padding:.5rem .75rem; border-radius:.75rem; font-size:.875rem;
+    border:1px solid rgb(var(--border));
+    background-color: rgba(255,255,255,.9);
+    transition: all .2s ease;
+  }
+  .input:focus{
+    outline:none; border-color: rgb(var(--brown));
+    box-shadow: 0 0 0 3px rgba(110,85,70,.2);
+  }
+
+  .label{ display:block; font-size:.875rem; margin-bottom:.25rem; color: rgba(var(--ink), .7); font-weight:500; }
+
+  /* Table (Contacts) */
+  .table-wrap{ overflow-x:auto; }
+  .table{
+    width:100%; font-size:.875rem;
+    background-color:#fff;
+    border:1px solid rgb(var(--border));
+    border-radius:1rem;
+  }
+  .th{
+    position:sticky; top:0; z-index:10;
+    text-align:left; font-weight:600; padding:.75rem;
+    background: rgba(var(--brown), .06);
+    color: rgba(var(--ink), .85);
+  }
+  .td{
+    padding:.75rem; vertical-align:top;
+    border-top:1px solid rgba(var(--brown), .12);
+  }
+  .row:hover{ background: rgba(var(--brown), .06); }
+
+  /* Sidebar nav items */
+  .nav-item{ color: rgba(var(--ink), .68); border-radius: .75rem; }
+  .nav-item:hover{
+    background-color: rgba(var(--brown), .10);
+    color: rgba(var(--ink), 1);
+  }
+  .nav-active{
+    background: rgba(var(--brown), .16);
+    color: rgba(var(--ink), .95);
+    font-weight: 600;
+    border-radius: .75rem;
+  }
+}
+
+/* =========================
+   4) Hairline (inset) & Real line (borders)
+   ========================= */
+@layer utilities {
+  /* Inset hairlines (레이아웃 변화 없음) */
+  .hair        { box-shadow:
+                  inset 0  1px 0 rgba(var(--hair), .10),
+                  inset 0 -1px 0 rgba(var(--hair), .10),
+                  inset 1px 0  0 rgba(var(--hair), .10),
+                  inset -1px 0 0 rgba(var(--hair), .10); }
+  .hair-t      { box-shadow: inset 0  1px 0 rgba(var(--hair), .12); }
+  .hair-b      { box-shadow: inset 0 -1px 0 rgba(var(--hair), .12); }
+  .hair-l      { box-shadow: inset 1px  0  0 rgba(var(--hair), .12); }
+  .hair-r      { box-shadow: inset -1px 0  0 rgba(var(--hair), .12); }
+
+  /* Real borders (실제 1px border) */
+  .line        { border: 1px solid rgba(var(--hair), .16); }
+  .line-weak   { border: 1px solid rgba(var(--hair), .12); }
+  .line-strong { border: 1px solid rgba(var(--hair), .22); }
+
+  .line-t        { border-top:    1px solid rgba(var(--hair), .16); }
+  .line-b        { border-bottom: 1px solid rgba(var(--hair), .16); }
+  .line-l        { border-left:   1px solid rgba(var(--hair), .16); }
+  .line-r        { border-right:  1px solid rgba(var(--hair), .16); }
+
+  .line-b-weak   { border-bottom: 1px solid rgba(var(--hair), .12); }
+  .line-b-strong { border-bottom: 1px solid rgba(var(--hair), .22); }
+  .line-r-weak   { border-right:  1px solid rgba(var(--hair), .12); }
+  .line-r-strong { border-right:  1px solid rgba(var(--hair), .22); }
+
+  .sidebar{
+    background-color: #fff !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
   }
 }
